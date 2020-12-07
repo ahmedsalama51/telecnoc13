@@ -101,7 +101,8 @@ class StockMoveLineInherit(models.Model):
 				# Compute Signed Done Qty
 				if sml.move_id.picking_type_id and sml.move_id.picking_type_id.code == 'outgoing':
 					signed_done_qty = -sml.qty_done
-					price = sml.product_id.standard_price
+					#price = sml.product_id.standard_price  # I think this is mistake Ahmed Salama ,comment by Sherby
+					price = sml.move_id.price_unit   # changed by Sherby
 				else:
 					signed_done_qty = sml.qty_done
 					price = sml.move_id.price_unit
