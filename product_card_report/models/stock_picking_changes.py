@@ -58,7 +58,6 @@ class StockPickingInherit(models.Model):
 				try:
 					pick.action_confirm()
 					results += "<li style='color:green'>%s is Mark as todo successfully</li>" % pick.name
-					_logger.error(green + "%s is Mark as todo successfully" % pick.name + reset)
 				except Exception as e:
 					results += "<li style='color:red'>%s picking not Mark as todo due to:<br/>%s</li>" % (pick.name, e)
 					_logger.error(red + "%s picking not Mark as todo due to:\n %s" % (pick.name, e) + reset)
@@ -69,21 +68,20 @@ class StockPickingInherit(models.Model):
 				try:
 					pick.action_assign()
 					results += "<li style='color:green'>%s is check availability successfully</li>" % pick.name
-					_logger.error(green + "%s is check availability successfully" % pick.name + reset)
-
 				except Exception as e:
 					results += "<li style='color:red'>%s picking not check availability due to:<br/> %s</li>" % (pick.name, e)
 					_logger.error(red + "%s picking not check availability due to:\n %s" % (pick.name, e) + reset)
 		# validate ready
 		if picking_ids:
 			transfer_obj = self.env['stock.immediate.transfer']
-			ready_pickings = picking_ids.filtered(lambda p: p.state == 'ready' and not p.show_check_availability)
+			ready_pickings = picking_ids.filtered(lambda p: p.state == 'assigned' and not p.show_check_availability)
 			if ready_pickings:
 				# Bulk confirm to save time for ready pickings
 				try:
-					transfer_obj.create({'pick_ids': ready_pickings}).process()
-					results += "<li style='color:green'>%s is validated successfully</li>" \
-					           % ready_pickings.mapped('name')
+					# transfer_obj.create({'pick_ids': ready_pickings}).process()
+					return ready_pickings.button_validate()
+					# results += "<li style='color:green'>%s is validated successfully</li>" \
+					#            % ready_pickings.mapped('name')
 				except Exception as e:
 						results += "<li style='color:red'>%s picking not validate due to:\n %s</li>" % (ready_pickings.mapped('name'), e)
 						_logger.error(red + "%s picking not validate due to:\n %s"
