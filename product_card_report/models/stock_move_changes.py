@@ -78,6 +78,7 @@ class StockMoveLineInherit(models.Model):
 		sml_obj = self.env['stock.move.line']
 		# TODO confirm that selected moves are ordered according to date not id
 		for sml in self.sorted(lambda l: l.date):
+			_logger.info(green + "move: %s" % sml.name + reset)
 			# Location Field cases
 			if sml.move_id.picking_type_id and sml.move_id.picking_type_id.code == "outgoing":
 				location_id = sml.location_id
@@ -103,16 +104,19 @@ class StockMoveLineInherit(models.Model):
 				elif h_move.move_id.inventory_id and \
 						h_move.location_dest_id == location_id.id:
 					pre_moves += h_move
-			_logger.info(green + "Pre moves: " % pre_moves + reset)
+			_logger.info(green + "Pre moves: %s" % pre_moves.mapped('name') + reset)
 			# Compute Signed Done Qty
 			if sml.move_id.picking_type_id and sml.move_id.picking_type_id.code == 'outgoing':
 				signed_done_qty = -sml.qty_done
 			else:
 				signed_done_qty = sml.qty_done
 			price = sml.move_id.price_unit or sml.product_id.standard_price
+			_logger.info(blue + "Price: %s" % price + reset)
 			# compute extra fields
 			if pre_moves:
 				move_line_id = pre_moves[0]
+				_logger.info(yellow + "pre move  qty: %s  cost: %s"
+				             % (move_line_id.curr_qty, move_line_id.curr_cost) + reset)
 				sml.pre_qty = move_line_id.curr_qty
 				sml.pre_cost = move_line_id.curr_cost
 				after_qty = move_line_id.curr_qty + signed_done_qty
