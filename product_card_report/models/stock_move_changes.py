@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
-from odoo import models, fields, api, _
-from odoo.exceptions import Warning
 import logging
+
+from odoo import models, fields, api
+
 _logger = logging.getLogger(__name__)
 grey = "\x1b[38;21m"
 yellow = "\x1b[33;21m"
@@ -12,7 +13,7 @@ green = "\x1b[32m"
 blue = "\x1b[34m"
 # Ahmed Salama Code Start ---->
 
-		
+
 class StockMoveLineInherit(models.Model):
 	_inherit = 'stock.move.line'
 	
@@ -42,7 +43,7 @@ class StockMoveLineInherit(models.Model):
 	@api.model
 	def start_compute_historical_qty(self):
 		_logger.info(green + "\n -----------------------------------------------------\n"
-		             " start compute historical qty and cost" + reset)
+		                     " start compute historical qty and cost" + reset)
 		all_moves = self.env['stock.move.line'].search([])
 		all_moves.set_product_historical_qty()
 		_logger.info(green + "\n -----------------------------------------------------\n"
@@ -57,7 +58,7 @@ class StockMoveLineInherit(models.Model):
 		if not records and self.env.context.get('active_ids'):
 			records = sml_obj.browse(self.env.context.get('active_ids'))
 		_logger.info(green + "\n -----------------------------------------------------\n"
-		             "Set historical qty and cost for %s" % self.env.context.get('active_ids') + reset)
+		                     "Set historical qty and cost for %s" % self.env.context.get('active_ids') + reset)
 		records.execute_update_history()
 	
 	def execute_update_history(self):
@@ -82,9 +83,13 @@ class StockMoveLineInherit(models.Model):
 				location_id = sml.location_id
 			else:
 				location_id = sml.location_dest_id
-			all_pre_move = sml_obj.search([('product_id', '=', sml.product_id.id),
-			                               ('date', '<', sml.date),
-			                               ('state', '=', 'done')],
+			domain = [('product_id', '=', sml.product_id.id),
+			          ('date', '<', sml.date),
+			          ('state', '=', 'done')]
+			if isinstance(sml.id, int):
+				domain.append(('id', '!=', sml.id))
+			_logger.info(red + "Domain: " % domain + reset)
+			all_pre_move = sml_obj.search(domain,
 			                              order="date DESC")
 			pre_moves = sml_obj
 			for h_move in all_pre_move:
@@ -98,26 +103,26 @@ class StockMoveLineInherit(models.Model):
 				elif h_move.move_id.inventory_id and \
 						h_move.location_dest_id == location_id.id:
 					pre_moves += h_move
-				# Compute Signed Done Qty
-				if sml.move_id.picking_type_id and sml.move_id.picking_type_id.code == 'outgoing':
-					signed_done_qty = -sml.qty_done
-					price = sml.product_id.standard_price
-				else:
-					signed_done_qty = sml.qty_done
-					price = sml.move_id.price_unit
-				# compute extra fields
-				if pre_moves:
-					move_line_id = pre_moves[0]
-					sml.pre_qty = move_line_id.curr_qty
-					sml.pre_cost = move_line_id.curr_cost
-					after_qty = move_line_id.curr_qty + signed_done_qty
-					after_cost = move_line_id.curr_cost + (signed_done_qty * price)
-				else:
-					after_qty = signed_done_qty
-					after_cost = (signed_done_qty * price)
-				sml.signed_done_qty = signed_done_qty
-				sml.curr_qty = after_qty
-				sml.curr_cost = after_cost
-				sml.price_unit = price
+			_logger.info(green + "Pre moves: " % pre_moves + reset)
+			# Compute Signed Done Qty
+			if sml.move_id.picking_type_id and sml.move_id.picking_type_id.code == 'outgoing':
+				signed_done_qty = -sml.qty_done
+			else:
+				signed_done_qty = sml.qty_done
+			price = sml.move_id.price_unit or sml.product_id.standard_price
+			# compute extra fields
+			if pre_moves:
+				move_line_id = pre_moves[0]
+				sml.pre_qty = move_line_id.curr_qty
+				sml.pre_cost = move_line_id.curr_cost
+				after_qty = move_line_id.curr_qty + signed_done_qty
+				after_cost = move_line_id.curr_cost + (signed_done_qty * price)
+			else:
+				after_qty = signed_done_qty
+				after_cost = (signed_done_qty * price)
+			sml.signed_done_qty = signed_done_qty
+			sml.curr_qty = after_qty
+			sml.curr_cost = after_cost
+			sml.price_unit = price
 
 # Ahmed Salama Code End.

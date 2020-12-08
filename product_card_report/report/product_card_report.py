@@ -1,6 +1,16 @@
 # -*- coding: utf-8 -*-
-from odoo import models, fields, api, _
-from odoo.exceptions import Warning
+import logging
+
+from odoo import models, api
+
+_logger = logging.getLogger(__name__)
+grey = "\x1b[38;21m"
+yellow = "\x1b[33;21m"
+red = "\x1b[31;21m"
+bold_red = "\x1b[31;1m"
+reset = "\x1b[0m"
+green = "\x1b[32m"
+blue = "\x1b[34m"
 # Ahmed Salama Code Start ---->
 
 
@@ -8,6 +18,11 @@ class ProductCardReport(models.AbstractModel):
     _name = 'report.product_card_report.product_card_report'
     
     def _get_sum_move_lines_history(self, data):
+        """
+        Get history moves before this dates
+        :param data: from report filters
+        :return: dict of vals
+        """
         move_obj = self.env['stock.move.line']
         product_obj = self.env['product.product']
         product = product_obj.sudo().browse(data['product_id'][0])
@@ -18,14 +33,20 @@ class ProductCardReport(models.AbstractModel):
             ('state', 'in', data.get('states_value'))  # TODO: TO be filtered using selection field and exclude cancel
         ]
         # Type in ----> وارد
+        _logger.info(green + "in domain: %s " % main_domain + reset)
         in_moves = move_obj.sudo().search(main_domain)
+        _logger.info(blue + "pre in moves: %s " % in_moves + reset)
         total_value = total_in_qty = total_out_qty = 0.0
         for move_line in in_moves:
             total_in_qty += move_line.qty_done
             total_value += move_line.qty_done * move_line.move_id.price_unit
         # Type out ----> صادر
         main_domain[1] = ('location_id', 'in', data.get('location_ids'))
+        _logger.info(green + "out domain: %s " % main_domain + reset)
+
         out_moves = move_obj.sudo().search(main_domain)
+        _logger.info(blue + "pre out moves: %s " % in_moves + reset)
+
         for move_line in out_moves:
             total_out_qty -= move_line.qty_done
             total_value -= move_line.qty_done * move_line.product_id.standard_price
@@ -42,6 +63,11 @@ class ProductCardReport(models.AbstractModel):
         return result
     
     def _get_move_lines(self, data):
+        """
+        get current moves according to filters
+        :param data: filters from wizard
+        :return: dict of vals
+        """
         move_obj = self.env['stock.move.line']
         # TODO: only for developer details
         # Type out (credit)----> صادر ('location_id','=',data['location_id'])
@@ -54,6 +80,7 @@ class ProductCardReport(models.AbstractModel):
                        ('date', '<=', data.get('date_to')),
                        ('state', 'in', data.get('states_value'))]
         moves = move_obj.sudo().search(main_domain, order="date asc")
+        _logger.info(blue + "All moves: %s " % moves + reset)
         move_list = []
         for i, move_line in enumerate(moves):
             if i == 0:
@@ -78,9 +105,9 @@ class ProductCardReport(models.AbstractModel):
                 location = move_line.location_id.complete_name
             
             balance = debit - credit
-            price = move_line.move_id.price_unit
+            price = move_line.move_id.price_unit or move_line.product_id.standard_price
             current_balance = prev_balance + balance
-            move_list.append({
+            move_dict = {
                 'date': move_line.date,
                 'number': move_line.picking_id.name,
                 'type': move_line.move_id.picking_type_id and
@@ -94,7 +121,9 @@ class ProductCardReport(models.AbstractModel):
                 'price_unit': price,
                 'value': move_line.curr_cost,
                 
-            })
+            }
+            _logger.info(yellow + "Dict moves: %s " % move_dict + reset)
+            move_list.append(move_dict)
         return move_list, moves
     
     @api.model
