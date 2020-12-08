@@ -125,4 +125,5 @@ class StockMoveLineInherit(models.Model):
 			sml.curr_cost = after_cost
 			sml.price_unit = price
 
+
 # Ahmed Salama Code End.
