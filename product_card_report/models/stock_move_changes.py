@@ -89,7 +89,7 @@ class StockMoveLineInherit(models.Model):
 			          ('state', '=', 'done')]
 			if isinstance(sml.id, int):
 				domain.append(('id', '!=', sml.id))
-			_logger.info(red + "Domain: %s" % domain + reset)
+			_logger.info(red + "--- Branch 1.5 Domain: %s" % domain + reset)
 			all_pre_move = sml_obj.search(domain,
 			                              order="date DESC")
 			pre_moves = sml_obj

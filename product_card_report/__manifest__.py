@@ -29,7 +29,7 @@
     'description': """
     This module add new report Product Card added to inventory reports
 """,
-    'version': '.5',
+    'version': '.1.5',
     'depends': ['stock', 'sale', 'sale_stock'],
     'data': [
         'data/report_paperformat.xml',
